@@ -1,0 +1,11 @@
+README
+======
+
+This folder contains all description files used to generate PBFVMC to the
+paper.
+
+You may regenerate formulae by running generate-pbfvmc.sh script.
+
+Here you will find directories named hw32 through hw512 which contains
+description files of all loads used in the paper from 32 to 512 available
+hardware.

@@ -1,0 +1,43 @@
+PBFVMC-GENERATOR
+================
+
+Here we have two builds of PBFVMC-Generator one for MacOS 64bits and another
+for Linux 64bits.
+
+Description file for PBFVMC-Generator is defined as:
+
+First line contains an Integer N representing the number of available hardware,
+followed by N lines containing, respectively, the name of the hardware (up
+to 255 characters, without spaces), an Integer representing the amount of
+RAM and an Integer representing the amount of CPU.
+
+The next line contains an integer K, representing the number of
+Virtual Machines, followed by K lines containing, respectively, the name of
+the Virtual Machine  (up to 255 characters, without spaces), an Integer
+representing the amount of RAM and an Integer representing the amount of
+CPU.
+
+Example:
+8<-------------
+3
+hardware1 100 32
+altix 256 64
+5
+webservices 4 4
+git 4 4
+jobs 100 24
+nfsserver 128 16
+frontend 4 2
+8<-------------
+
+Execution
+---------
+
+PBFVMC-Generator reads description from standard input and prints the
+pseudo-Boolean formula to standard output.
+
+Example:
+./pbfvmc-generator-linux64 < mydescription.desc > myformula.pbs
+
+If you have any comments or doubts don't hesitate to contact me at
+brunoribas@gmail.com
