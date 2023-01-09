@@ -67,7 +67,7 @@ class Sat:
             print(f"+{item[0]} x{str(variable)}", end = " ")
             variable += 1
         print(f">= {str(self.totalRamVM)};")
-
+        
         #loop to ammount of CPU
         #Step 9
         variable = 1
@@ -92,7 +92,6 @@ class Sat:
             Ni+=1
             print(f" >= {self.totalRamVM};")
         
-        print()
         Ni = 1
         Ki = int(len(self.dictHW))+1
 
@@ -106,45 +105,54 @@ class Sat:
             print(f" >= {self.totalCpuVM};")
     
     def virtual_machines_in_hardwares(self):
-        Ki = int(len(self.dictHW))+1
-        steps = Ki
-        j=0 
-        i=0
+        totalHardwares = int(len(self.dictHW))
+        totalVms = int(len(self.dictVM))
+        kj = 0
+        steps = 0
+        
+        j=1
         for keyVM, itemVM in self.dictVM.items():
-            j=0 
-
-            Ki = steps
+            kj=0
             for keyHW, itemHW in self.dictHW.items():
-                print(f"+{1} x{str(Ki+j+i)}", end = " ")
-                Ki+=steps
-                j+=1
-            
+                print(f"+{1} x{str(kj+j+totalHardwares)}", end = " ")
+                kj+=totalVms            
             print(r">= 1;")
-            j=0 
 
-            Ki = steps
+            kj=0
             for keyHW, itemHW in self.dictHW.items():
-                print(f"+{1} ~x{str(Ki+j+i)}", end = " ")
-                Ki+=steps         
-                j+=1   
-            # j+=1
-            i+=1
+                print(f"+{1} ~x{str(kj+j+totalHardwares)}", end = " ")
+                kj+=totalVms         
+            j+=1
 
-            print(f">= { steps-2 };")
-        # print(f"* #variable= {j+i} #constraint= 42")
-        # print()
+            print(f">= { totalHardwares-1 };")
 
 
 sat = Sat()
 dictHW, dictVM = sat.input()
-print(dictHW, dictVM)
-print()
+# print(dictHW, dictVM)
+#Total number of Hardwares * Virtual Machines + Number of hardwares
+# In another word is the number of variables used in Virtual machines +\
+# The possibility that each virtual machine cold be allocated in each hardware
+totalHW = int(len(dictHW))
+totalVM = int(len(dictVM))
+
+variables = (totalHW * totalVM) + totalHW
+
+#one constrain generated in step 7 
+#2 constrain generated in step 8 and 9 
+#2*(number of hardware) constrain generated in step 10 and 11 
+#2*(number of VM's) constrains generated in step 12 and 13 
+constraint= (2 + 2*totalHW + 2*totalVM)
+
+print(f"* #variable= {variables} #constraint= {constraint}")
+# print()
 sat.minimizes_rule()
-print()
+# print()
 sat.summation_of_hardware_cpu_ram_ammount()
-print()
+# print()
 sat.limit_hardware_provided_to_virtualmachines()
-print()
+# print()
 sat.virtual_machines_in_hardwares()
-print()
+# print()
 #print(dictHW, dictVM)
+print(f"* #variable= {variables} #constraint= {constraint}")
