@@ -57,7 +57,93 @@ class Sat:
             self.totalCpuVM += int(cpuV)
 
 
-        return self.dictHW, self.dictVM
+        return self.dictHW, self.dictVM  
+    
+    def minimizes_rule(self):
+        '''
+            Minimize the ammount of hardware according to formula 7
+        '''
+        variable = 1
+        f.write("min:")
+        for key, item in self.dictHW.items():
+            f.write(f" +1 x{str(variable)}")
+            variable += 1
+        f.write(";\n")
+
+    def summation_of_hardware_cpu_ram_ammount(self):
+        '''
+            This fuction runs steps 8 and 9 of scientific
+            article and generate rule to check if
+            ammount of ram and cpu in virtual machines 
+            are lower than hardware max availale.  
+        '''
+        #loop to ammount of RAM
+        #Step 8
+        variable = 1
+        for key, item in self.dictHW.items():
+            f.write(f"+{item[0]} x{str(variable)} ")
+            variable += 1
+        f.write(f">= {str(self.totalRamVM)};\n")
+        
+        #loop to ammount of CPU
+        #Step 9
+        variable = 1
+        for key, item in self.dictHW.items():
+            f.write(f"+{item[1]} x{str(variable)} ")
+            variable += 1
+        f.write(f">= {str(self.totalCpuVM)};\n")
+
+
+    def limit_hardware_provided_to_virtualmachines(self):
+        '''
+            Creating the variable that represents each VM running into HW
+        '''
+        #step 10
+        Ki = int(len(self.dictHW))+1
+        Ni = 1
+        for keyh, itemh in self.dictHW.items():
+            for key, item in self.dictVM.items():
+                f.write(f"+{item[0]} ~x{str(Ki)} ")
+                Ki+=1
+            f.write(f"+{itemh[0]} x{Ni}")
+            Ni+=1
+            f.write(f" >= {self.totalRamVM};\n")
+        
+        #Step 11
+        Ni = 1
+        Ki = int(len(self.dictHW))+1
+        for keyh, itemh in self.dictHW.items():
+            for key, item in self.dictVM.items():
+                f.write(f"+{item[1]} ~x{str(Ki)} ")
+                Ki+=1
+            f.write(f"+{itemh[1]} x{Ni}")
+            Ni+=1
+            f.write(f" >= {self.totalCpuVM};\n")
+    
+    def virtual_machines_in_hardwares(self):
+        #Represent Steps 12 and 13
+        totalHardwares = int(len(self.dictHW))
+        totalVms = int(len(self.dictVM))
+        kj = 0
+        steps = 0
+        
+        j=1
+        for keyVM, itemVM in self.dictVM.items():
+            #Step 12
+            kj=0
+            for keyHW, itemHW in self.dictHW.items():
+                f.write(f"+{1} x{str(kj+j+totalHardwares)} ")
+                kj+=totalVms            
+            f.write(f">= 1;\n")
+
+            #Step 13 
+            kj=0
+            for keyHW, itemHW in self.dictHW.items():
+                f.write(f"+{1} ~x{str(kj+j+totalHardwares)} ")
+                kj+=totalVms         
+            j+=1
+
+            f.write(f">= { totalHardwares-1 };\n")
 
     def claspHandler(self):
         linearArray = []
@@ -72,6 +158,7 @@ class Sat:
         
         self.getMachines(linearArray)
         self.getVirtuals(linearArray)
+
         return linearArray     
                     
     def getVirtuals(self, linearArray):
@@ -106,89 +193,7 @@ class Sat:
         return (i)
     
     
-    
-    
-    def minimizes_rule(self):
-        variable = 1
-        f.write("min:")
-        for key, item in self.dictHW.items():
-            f.write(f" +1 x{str(variable)}")
-            variable += 1
-        f.write(";")
-
-    def summation_of_hardware_cpu_ram_ammount(self):
-        '''
-            This fuction runs steps 8 and 9 of thesis and generate rule to check if\
-                ammount of ram and cpu in virtual machines are lower than hardware max availale.  
-        '''
-        
-        #loop to ammount of RAM
-        #Step 8
-        variable = 1
-        for key, item in self.dictHW.items():
-            f.write(f"+{item[0]} x{str(variable)} ")
-            variable += 1
-        f.write(f">= {str(self.totalRamVM)};")
-        
-        #loop to ammount of CPU
-        #Step 9
-        variable = 1
-        for key, item in self.dictHW.items():
-            f.write(f"+{item[1]} x{str(variable)} ")
-            variable += 1
-        f.write(f">= {str(self.totalCpuVM)};")
-
-
-    def limit_hardware_provided_to_virtualmachines(self):
-        #The following line is a 'gabiarra'
-        #this is my try to create new variable to each VM in each Hw
-        Ki = int(len(self.dictHW))+1
-        
-        Ni = 1
-        for keyh, itemh in self.dictHW.items():
-            for key, item in self.dictVM.items():
-                f.write(f"+{item[0]} ~x{str(Ki)} ")
-                Ki+=1
-                # item[0]
-            f.write(f"+{itemh[0]} x{Ni}")
-            Ni+=1
-            f.write(f" >= {self.totalRamVM};")
-        
-        Ni = 1
-        Ki = int(len(self.dictHW))+1
-
-        for keyh, itemh in self.dictHW.items():
-            for key, item in self.dictVM.items():
-                f.write(f"+{item[1]} ~x{str(Ki)} ")
-                Ki+=1
-                # item[0]
-            f.write(f"+{itemh[1]} x{Ni}")
-            Ni+=1
-            f.write(f" >= {self.totalCpuVM};")
-    
-    def virtual_machines_in_hardwares(self):
-        totalHardwares = int(len(self.dictHW))
-        totalVms = int(len(self.dictVM))
-        kj = 0
-        steps = 0
-        
-        j=1
-        for keyVM, itemVM in self.dictVM.items():
-            kj=0
-            for keyHW, itemHW in self.dictHW.items():
-                f.write(f"+{1} x{str(kj+j+totalHardwares)} ")
-                kj+=totalVms            
-            f.write(r">= 1;")
-
-            kj=0
-            for keyHW, itemHW in self.dictHW.items():
-                f.write(f"+{1} ~x{str(kj+j+totalHardwares)} ")
-                kj+=totalVms         
-            j+=1
-
-            f.write(f">= { totalHardwares-1 };")
-
-
+  
 
 sat = Sat()
 dictHW, dictVM = sat.input()
@@ -199,21 +204,20 @@ totalHW = int(len(dictHW))
 totalVM = int(len(dictVM))
 
 variables = (totalHW * totalVM) + totalHW
-
 #one constrain generated in step 7 
 #2 constrain generated in step 8 and 9 
 #2*(number of hardware) constrain generated in step 10 and 11 
 #2*(number of VM's) constrains generated in step 12 and 13 
 constraint= (2 + 2*totalHW + 2*totalVM)
 
-f.write(f"* #variable= {variables} #constraint= {constraint}")
+f.write(f"* #variable= {variables} #constraint= {constraint}\n")
 
 sat.minimizes_rule()
 sat.summation_of_hardware_cpu_ram_ammount()
 sat.limit_hardware_provided_to_virtualmachines()
 sat.virtual_machines_in_hardwares()
 
-f.write(f"* #variable= {variables} #constraint= {constraint}")
+f.write(f"* #variable= {variables} #constraint= {constraint}\n")
 
 
 f.close()
