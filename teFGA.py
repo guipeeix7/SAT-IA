@@ -3,13 +3,19 @@
 # https://www.brunoribas.com.br/publicacoes/files/bracis-2013-pbfvmc.pdf
 
 from sys import stdin
+from sys import argv
 import os
 import numpy as np
 import pathlib
+import signal
+from time import sleep
 
+# exit()
+# os.path.basename('/root/file.ext')
+filePath = os.path.basename(argv[1])
 
 pathlib.Path('./outputs').mkdir(parents=True, exist_ok=True) 
-f = open("./outputs/out.desc", "w+")
+f = open("./outputs/"+str(filePath), "w+")
 
 class Sat:
     '''  
@@ -56,9 +62,41 @@ class Sat:
             self.totalRamVM += int(ramV)
             self.totalCpuVM += int(cpuV)
 
-
         return self.dictHW, self.dictVM  
-    
+    def inputFromParameter(self):
+        '''
+            Receives user or txt input and set:
+            dictHW, dictVM, totalRamVM, totalCpuVM variables values
+        '''
+        f = open(str(argv[1]), "r")
+
+        lines = f.readlines()
+        # for line in lines:
+        #     print(line)
+        
+        self.n = int(lines[0])
+        i = 1 
+        for i in range(1, self.n+1):
+            nomeH, ramH, cpuH = lines[i].split()
+            self.dictHW[nomeH] = [ramH, cpuH]
+
+            self.totalRamHW += int(ramH)
+            self.totalCpuHW += int(cpuH)
+        
+        
+        self.m = int(lines[i+1])
+        
+        for j in range(i+2, self.m+self.n+2):
+            nomeV, ramV, cpuV = lines[j].split()
+            self.dictVM[nomeV] = [ramV, cpuV]
+
+            #Pre calculate the total ammount of ram and Cpu used by VMs    
+            self.totalRamVM += int(ramV)
+            self.totalCpuVM += int(cpuV)
+        return self.dictHW, self.dictVM  
+        # print(i+2)
+        # exit()
+
     def minimizes_rule(self):
         '''
             Minimize the ammount of hardware according to formula 7
@@ -66,9 +104,32 @@ class Sat:
         variable = 1
         f.write("min:")
         for key, item in self.dictHW.items():
-            f.write(f" +1 x{str(variable)}")
+            f.write(f" +{str(1)} x{str(variable)}")
+            variable += 1
+        f.write(" ;\n")
+
+    def minimize_ram(self):
+        '''
+            Minimize the ammount of RAM based on formula 7
+        '''
+        variable = 1
+        f.write("min:")
+        for key, item in self.dictHW.items():
+            f.write(f" +{str(item[0])} x{str(variable)}")
             variable += 1
         f.write(";\n")
+
+    def minimize_cpu(self):
+        '''
+            Minimize the ammount of CPU based on formula 7
+        '''
+        variable = 1
+        f.write("min:")
+        for key, item in self.dictHW.items():
+            f.write(f" +{str(item[1])} x{str(variable)}")
+            variable += 1
+        f.write(";\n")
+
 
     def summation_of_hardware_cpu_ram_ammount(self):
         '''
@@ -148,7 +209,7 @@ class Sat:
     def claspHandler(self):
         linearArray = []
 
-        with open('./outputs/outClasp.txt') as f:
+        with open('./outputs/'+os.path.splitext(str(filePath))[0]+'.clasp') as f:
             lines = f.readlines()
             for line in lines:
                 if(line[0] == 'v'):
@@ -162,28 +223,32 @@ class Sat:
         return linearArray     
                     
     def getVirtuals(self, linearArray):
+        f = open('./outputs/'+os.path.splitext(str(filePath))[0]+'.readable', "w+")
+
+
         matrix = linearArray[self.n :].reshape(self.n,self.m)
         
-        
-        print("VM" , end="    ")
+        f.write(f"VM    ")
+
         for i in range(0, (self.m)):
-            print(f"{i+1}", end=" ")
-        print()
+            f.write(f"{i+1} ")
+        f.write('\n')
         
         for i in range(0, (self.n)):
-            print(f"HW({i+1})", end = " ")
+            f.write(f"HW({i+1}) ")
             for j in range(0, self.m):
                 if("-" in matrix[i, j]):
-                    print(0, end=" ")
+                    f.write(str(0)+' ')
                 else:
-                    print(1, end = " ")
+                    f.write(str(1)+' ')
                 # print(f"HW {i+1} {matrix[i, j]}")
-            print()
+            f.write("\n")
 
 
     def getMachines(self, tempLineArr):
         HwMachines = []
         i = 0 
+
         for i in range(1, self.n):
             if('-' not in tempLineArr[i]):
                 HwMachines.append(1)
@@ -191,18 +256,22 @@ class Sat:
                 HwMachines.append(0)
         # print(HwMachines)
         return (i)
-    
-    
-  
+
+    def writeResults(self):
+
+        os.system('clasp ./outputs/'+str(filePath)+' > ./outputs/'+os.path.splitext(str(filePath))[0]+'.clasp') 
 
 sat = Sat()
-dictHW, dictVM = sat.input()
+dictHW, dictVM = sat.inputFromParameter()
+
+# print(sat.inputFromParameter())
+# exit()
 #Total number of Hardwares * Virtual Machines + Number of hardwares
 # In another word is the number of variables used in Virtual machines +\
 # The possibility that each virtual machine cold be allocated in each hardware
 totalHW = int(len(dictHW))
 totalVM = int(len(dictVM))
-
+print(totalHW, totalVM)
 variables = (totalHW * totalVM) + totalHW
 #one constrain generated in step 7 
 #2 constrain generated in step 8 and 9 
@@ -211,6 +280,8 @@ variables = (totalHW * totalVM) + totalHW
 constraint= (2 + 2*totalHW + 2*totalVM)
 
 f.write(f"* #variable= {variables} #constraint= {constraint}\n")
+# minimize_ram
+# minimize_cpu
 
 sat.minimizes_rule()
 sat.summation_of_hardware_cpu_ram_ammount()
@@ -219,19 +290,28 @@ sat.virtual_machines_in_hardwares()
 
 f.write(f"* #variable= {variables} #constraint= {constraint}\n")
 
-
+# exit()
 f.close()
-os.system('clasp ./outputs/out.desc > ./outputs/outClasp.txt')
+# sleep(2)
+sat.writeResults()
+# exit()
+# exit()
+# signal.signal(signal.SIGALRM, sat.writeResults()) 
+# signal.alarm(10) 
 
 sat.claspHandler()
+#Ele deve abrir um arquivo por parametro e gerar um output no nome do arquivo de entrada
+# (: 
+# Coisa boa
 
 
-if os.path.exists("./outputs/out.desc"):
-  os.remove("./outputs/out.desc")
-else:
-  print("The file does not exist")
+
+# if os.path.exists("./outputs/out.desc"):
+#   os.remove("./outputs/out.desc")
+# else:
+#   print("The file does not exist")
   
-if os.path.exists("./outputs/outClasp.txt"):
-  os.remove("./outputs/outClasp.txt")
-else:
-  print("The file does not exist")
+# if os.path.exists("./outputs/outClasp.txt"):
+#   os.remove("./outputs/outClasp.txt")
+# else:
+#   print("The file does not exist")
